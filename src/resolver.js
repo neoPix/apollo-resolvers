@@ -11,7 +11,7 @@ export const createResolver = (resFn, errFn) => {
       // On error, check if there is an error handler.  If not, throw the original error
       if (!isFunction(errFn)) throw e;
       // Call the error handler.
-      return Promisify(errFn)(root, args, context, {error: e, ...info}).then(parsedError => {
+      return Promisify(errFn)(root, args, context, Object.assign({error: e}, info)).then(parsedError => {
         // If it resolves, throw the resolving value or the original error.
         throw parsedError || e
       }, parsedError => {

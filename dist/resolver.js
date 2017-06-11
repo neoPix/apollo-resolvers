@@ -14,14 +14,15 @@ var createResolver = exports.createResolver = function createResolver(resFn, err
   var baseResolver = function baseResolver(root) {
     var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var context = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    var info = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 
     // Return resolving promise with `null` if the resolver function param is not a function
     if (!(0, _util.isFunction)(resFn)) return Promise.resolve(null);
-    return (0, _util.Promisify)(resFn)(root, args, context).catch(function (e) {
+    return (0, _util.Promisify)(resFn)(root, args, context, info).catch(function (e) {
       // On error, check if there is an error handler.  If not, throw the original error
       if (!(0, _util.isFunction)(errFn)) throw e;
       // Call the error handler.
-      return (0, _util.Promisify)(errFn)(root, args, context, e).then(function (parsedError) {
+      return (0, _util.Promisify)(errFn)(root, args, context, Object.assign({ error: e }, info)).then(function (parsedError) {
         // If it resolves, throw the resolving value or the original error.
         throw parsedError || e;
       }, function (parsedError) {
@@ -34,14 +35,14 @@ var createResolver = exports.createResolver = function createResolver(resFn, err
   baseResolver.createResolver = function (cResFn, cErrFn) {
     var Promise = (0, _promise.getPromise)();
 
-    var childResFn = function childResFn(root, args, context) {
+    var childResFn = function childResFn(root, args, context, info) {
       // Start with either the parent resolver function or a no-op (returns null)
-      var entry = (0, _util.isFunction)(resFn) ? (0, _util.Promisify)(resFn)(root, args, context) : Promise.resolve(null);
+      var entry = (0, _util.isFunction)(resFn) ? (0, _util.Promisify)(resFn)(root, args, context, info) : Promise.resolve(null);
       return entry.then(function (r) {
         // If the parent returns a value, continue
         if ((0, _util.isNotNullOrUndefined)(r)) return r;
         // Call the child resolver function or a no-op (returns null)
-        return (0, _util.isFunction)(cResFn) ? (0, _util.Promisify)(cResFn)(root, args, context) : Promise.resolve(null);
+        return (0, _util.isFunction)(cResFn) ? (0, _util.Promisify)(cResFn)(root, args, context, info) : Promise.resolve(null);
       });
     };
 
